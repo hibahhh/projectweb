@@ -1,0 +1,234 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../App';
+import { SERVICES } from './Services';
+
+function Booking() {
+    const { user, addBooking } = useAuth();
+    const navigate = useNavigate();
+
+    const [formData, setFormData] = useState({
+        customerName: user?.name || '',
+        email: user?.email || '',
+        phone: '',
+        service: '',
+        date: '',
+        time: '',
+        notes: ''
+    });
+
+    const [submitted, setSubmitted] = useState(false);
+
+    const timeSlots = [
+        '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM',
+        '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM',
+        '5:00 PM', '6:00 PM', '7:00 PM'
+    ];
+
+    const handleChange = (e) => {
+        setFormData({
+            ...formData,
+            [e.target.name]: e.target.value
+        });
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+
+        if (!user) {
+            alert('Please login to book an appointment');
+            navigate('/login');
+            return;
+        }
+
+        // Add booking
+        addBooking(formData);
+        setSubmitted(true);
+
+        // Reset form after 3 seconds
+        setTimeout(() => {
+            setSubmitted(false);
+            setFormData({
+                customerName: user?.name || '',
+                email: user?.email || '',
+                phone: '',
+                service: '',
+                date: '',
+                time: '',
+                notes: ''
+            });
+        }, 3000);
+    };
+
+    if (submitted) {
+        return (
+            <div className="min-h-screen flex items-center justify-center px-4">
+                <div className="card max-w-md w-full text-center">
+                    <div className="text-6xl mb-4">✅</div>
+                    <h2 className="text-3xl font-bold text-gray-800 mb-4">
+                        Booking Confirmed!
+                    </h2>
+                    <p className="text-gray-600 mb-6">
+                        Your appointment has been successfully booked. We'll send you a confirmation email shortly.
+                    </p>
+                    <div className="bg-primary-50 rounded-lg p-4 mb-6 text-left">
+                        <p className="text-sm text-gray-600 mb-1">Service</p>
+                        <p className="font-semibold text-gray-800 mb-3">{formData.service}</p>
+                        <p className="text-sm text-gray-600 mb-1">Date & Time</p>
+                        <p className="font-semibold text-gray-800">{formData.date} at {formData.time}</p>
+                    </div>
+                    <button
+                        onClick={() => navigate('/')}
+                        className="btn-primary w-full"
+                    >
+                        Back to Home
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen py-12 px-4">
+            <div className="max-w-3xl mx-auto">
+                <div className="text-center mb-8">
+                    <h1 className="text-5xl font-bold mb-4">
+                        <span className="bg-gradient-to-r from-primary-600 to-pink-600 bg-clip-text text-transparent">
+                            Book Your Appointment
+                        </span>
+                    </h1>
+                    <p className="text-xl text-gray-600">
+                        Fill out the form below and we'll get you scheduled
+                    </p>
+                </div>
+
+                <div className="card">
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        {/* Personal Information */}
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="label">Full Name *</label>
+                                <input
+                                    type="text"
+                                    name="customerName"
+                                    value={formData.customerName}
+                                    onChange={handleChange}
+                                    required
+                                    className="input-field"
+                                    placeholder="John Doe"
+                                />
+                            </div>
+                            <div>
+                                <label className="label">Email *</label>
+                                <input
+                                    type="email"
+                                    name="email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    required
+                                    className="input-field"
+                                    placeholder="john@example.com"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="label">Phone Number *</label>
+                            <input
+                                type="tel"
+                                name="phone"
+                                value={formData.phone}
+                                onChange={handleChange}
+                                required
+                                className="input-field"
+                                placeholder="+1 (555) 123-4567"
+                            />
+                        </div>
+
+                        {/* Service Selection */}
+                        <div>
+                            <label className="label">Select Service *</label>
+                            <select
+                                name="service"
+                                value={formData.service}
+                                onChange={handleChange}
+                                required
+                                className="input-field"
+                            >
+                                <option value="">Choose a service...</option>
+                                {SERVICES.map(service => (
+                                    <option key={service.id} value={service.name}>
+                                        {service.name} - {service.price}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Date and Time */}
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="label">Preferred Date *</label>
+                                <input
+                                    type="date"
+                                    name="date"
+                                    value={formData.date}
+                                    onChange={handleChange}
+                                    required
+                                    min={new Date().toISOString().split('T')[0]}
+                                    className="input-field"
+                                />
+                            </div>
+                            <div>
+                                <label className="label">Preferred Time *</label>
+                                <select
+                                    name="time"
+                                    value={formData.time}
+                                    onChange={handleChange}
+                                    required
+                                    className="input-field"
+                                >
+                                    <option value="">Choose a time...</option>
+                                    {timeSlots.map(time => (
+                                        <option key={time} value={time}>{time}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Additional Notes */}
+                        <div>
+                            <label className="label">Additional Notes (Optional)</label>
+                            <textarea
+                                name="notes"
+                                value={formData.notes}
+                                onChange={handleChange}
+                                rows="4"
+                                className="input-field resize-none"
+                                placeholder="Any special requests or preferences..."
+                            />
+                        </div>
+
+                        {/* Submit Button */}
+                        <div className="pt-4">
+                            <button type="submit" className="btn-primary w-full text-lg">
+                                Confirm Booking
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                {/* Info Box */}
+                <div className="mt-8 bg-blue-50 border-l-4 border-blue-500 p-6 rounded-lg">
+                    <h3 className="font-bold text-blue-900 mb-2">📋 Booking Policy</h3>
+                    <ul className="text-blue-800 space-y-1 text-sm">
+                        <li>• Please arrive 10 minutes before your appointment</li>
+                        <li>• Cancellations must be made 24 hours in advance</li>
+                        <li>• A confirmation email will be sent to your registered email</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+export default Booking;
