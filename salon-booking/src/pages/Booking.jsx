@@ -4,7 +4,7 @@ import { useAuth } from '../App';
 import { SERVICES } from './Services';
 
 function Booking() {
-    const { user, addBooking } = useAuth();
+    const { user } = useAuth();
     const navigate = useNavigate();
 
     const [formData, setFormData] = useState({
@@ -18,6 +18,8 @@ function Booking() {
     });
 
     const [submitted, setSubmitted] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
 
     const timeSlots = [
         '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM',
@@ -30,10 +32,12 @@ function Booking() {
             ...formData,
             [e.target.name]: e.target.value
         });
+        setError('');
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
+        setError('');
 
         if (!user) {
             alert('Please login to book an appointment');
@@ -41,23 +45,33 @@ function Booking() {
             return;
         }
 
-        // Add booking
-        addBooking(formData);
-        setSubmitted(true);
+        setIsLoading(true);
 
-        // Reset form after 3 seconds
-        setTimeout(() => {
-            setSubmitted(false);
-            setFormData({
-                customerName: user?.name || '',
-                email: user?.email || '',
-                phone: '',
-                service: '',
-                date: '',
-                time: '',
-                notes: ''
+        try {
+            const response = await fetch('http://localhost:3001/api/bookings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
             });
-        }, 3000);
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                setSubmitted(true);
+                // Redirect to user dashboard after 3 seconds
+                setTimeout(() => {
+                    navigate('/user-dashboard');
+                }, 3000);
+            } else {
+                setError(data.message || 'Failed to create booking. Please try again.');
+            }
+        } catch (error) {
+            setError('Network error. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     if (submitted) {
@@ -208,10 +222,21 @@ function Booking() {
                             />
                         </div>
 
+                        {/* Error Message */}
+                        {error && (
+                            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                                {error}
+                            </div>
+                        )}
+
                         {/* Submit Button */}
                         <div className="pt-4">
-                            <button type="submit" className="btn-primary w-full text-lg">
-                                Confirm Booking
+                            <button
+                                type="submit"
+                                className="btn-primary w-full text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={isLoading}
+                            >
+                                {isLoading ? 'Creating Booking...' : 'Confirm Booking'}
                             </button>
                         </div>
                     </form>

@@ -1,154 +1,278 @@
-# 💇‍♀️ Salon Online Booking System (MVP)
+# 💇 Glamour Salon - Online Booking System
 
-A minimal viable product for a salon booking system with React frontend and Node.js backend.
+A comprehensive salon booking management system built with React, Node.js, and Express. This project demonstrates full-stack development with role-based access control, CRUD operations, data visualization, and modern UI/UX design.
 
-## 🚀 Features
+## ✨ Features
 
-### Frontend (React + Tailwind CSS)
-- **Home Page**: Beautiful landing page with hero section and features
-- **Services Page**: Filterable service catalog with detailed information
-- **Booking Page**: Comprehensive appointment booking form
-- **Login Page**: Mock authentication system
-- **Admin Dashboard**: Booking management with statistics and filters
+### 🔐 Authentication & Authorization
+- **User Signup** - New users can create accounts with email validation
+- **User Login** - Secure login with email and password
+- **Password Recovery** - Forgot password functionality with email verification
+- **Role-Based Access Control** - Two distinct roles:
+  - **Admin**: Full access to manage all bookings
+  - **User**: Can create and manage their own bookings
+- **Protected Routes** - Automatic redirection based on user role
+- **Logout** - Secure session termination
 
-### Backend (Node.js + Express)
-- RESTful API with in-memory data storage
-- Mock authentication
-- Service management
-- Booking CRUD operations
-- Availability checking
+### 👤 User Features
+- **User Dashboard** - Personalized dashboard showing:
+  - Total bookings count
+  - Confirmed bookings count
+  - Pending bookings count
+  - List of all user's appointments
+- **Create Bookings** - Book appointments with:
+  - Service selection
+  - Date and time picker
+  - Contact information
+  - Additional notes
+- **View Booking Status** - Real-time status updates (Pending/Confirmed/Rejected)
+- **Cancel Bookings** - Users can cancel their pending bookings
 
-## 📋 Prerequisites
+### 👨‍� Admin Features
+- **Admin Dashboard** - Comprehensive management interface with:
+  - Statistics cards (Total, Pending, Confirmed, Rejected)
+  - Interactive charts (Pie chart and Bar chart)
+  - Search functionality
+  - Filter by status
+  - CSV export capability
+- **Booking Management**:
+  - View all bookings from all users
+  - Confirm pending bookings
+  - Reject bookings
+  - Delete bookings
+- **Search & Filter**:
+  - Search by customer name, service, or email
+  - Filter by status (All/Pending/Confirmed/Rejected)
+- **Data Export** - Export bookings to CSV format
 
-- Node.js (v14 or higher)
+### 📊 Data Visualization
+- **Pie Chart** - Visual representation of bookings by status
+- **Bar Chart** - Status overview with booking counts
+- Built with Chart.js for interactive, responsive charts
+
+### ✅ Form Validation
+**Client-Side Validation:**
+- Required field validation
+- Email format validation
+- Password minimum length (6 characters)
+- Password confirmation matching
+- Phone number validation
+- Date validation (future dates only)
+
+**Server-Side Validation:**
+- Duplicate email check
+- Email format verification
+- Password strength requirements
+- Required fields enforcement
+- Date validation
+
+### 🎨 Modern UI/UX Design
+- **Neutral Salon Aesthetic** - Soft beige, taupe, and warm gray color palette
+- **Responsive Design** - Mobile and desktop optimized
+- **Smooth Animations** - Hover effects and transitions
+- **Glassmorphism Effects** - Modern card designs with backdrop blur
+- **Loading States** - User feedback during async operations
+- **Error Handling** - Clear error messages and validation feedback
+
+### 📱 Pages
+1. **Home** - Landing page with salon introduction
+2. **Services** - Display of available salon services
+3. **Booking** - Appointment booking form (protected)
+4. **Login** - User authentication
+5. **Signup** - New user registration
+6. **Forgot Password** - Password recovery
+7. **User Dashboard** - User's personal booking management (protected)
+8. **Admin Dashboard** - Admin booking management interface (protected)
+
+## 🛠️ Technology Stack
+
+### Frontend
+- **React 19** - UI library
+- **React Router DOM** - Client-side routing
+- **Tailwind CSS 4** - Utility-first CSS framework
+- **Chart.js** - Data visualization
+- **React-ChartJS-2** - React wrapper for Chart.js
+- **Vite** - Build tool and dev server
+
+### Backend
+- **Node.js** - Runtime environment
+- **Express.js** - Web framework
+- **CORS** - Cross-origin resource sharing
+
+## 📦 Installation & Setup
+
+### Prerequisites
+- Node.js (v16 or higher)
 - npm or yarn
 
-## 🛠️ Installation & Setup
-
-### 1. Install Frontend Dependencies
-
+### Backend Setup
 ```bash
-cd salon-booking
-npm install
-```
-
-### 2. Install Backend Dependencies
-
-```bash
+# Navigate to backend directory
 cd backend
+
+# Install dependencies
 npm install
-```
 
-## 🏃‍♂️ Running the Application
-
-### Start Backend Server (Terminal 1)
-
-```bash
-cd backend
+# Start the server
 npm start
 ```
+The backend server will run on `http://localhost:3001`
 
-The backend will run on `http://localhost:3001`
-
-### Start Frontend Development Server (Terminal 2)
-
+### Frontend Setup
 ```bash
+# Navigate to project root
 cd salon-booking
+
+# Install dependencies
+npm install
+
+# Start the development server
 npm run dev
 ```
+The frontend will run on `http://localhost:5173`
 
-The frontend will run on `http://localhost:5173` (or another port if 5173 is busy)
-
-## 🔐 Demo Credentials
+## 🔑 Demo Credentials
 
 ### Admin Access
 - **Email**: admin@salon.com
 - **Password**: admin123
 
-### Customer Access
-- **Email**: Any valid email
-- **Password**: Any password
+### User Access
+- **Email**: user@example.com
+- **Password**: user123
 
-## 📁 Project Structure
-
-```
-salon-booking/
-├── backend/
-│   ├── server.js          # Express server with API routes
-│   └── package.json       # Backend dependencies
-├── src/
-│   ├── pages/
-│   │   ├── Home.jsx       # Landing page
-│   │   ├── Services.jsx   # Services catalog
-│   │   ├── Booking.jsx    # Booking form
-│   │   ├── Login.jsx      # Authentication
-│   │   └── AdminDashboard.jsx  # Admin panel
-│   ├── App.jsx            # Main app with routing
-│   ├── index.css          # Tailwind styles
-│   └── main.jsx           # Entry point
-├── package.json
-└── README.md
-```
-
-## 🎨 UI Features
-
-- Responsive design for all screen sizes
-- Modern gradient color scheme (purple/pink)
-- Smooth animations and transitions
-- Glassmorphism effects
-- Interactive hover states
-- Premium aesthetic design
-
-## 🔧 API Endpoints
+## � API Endpoints
 
 ### Authentication
 - `POST /api/auth/login` - User login
+- `POST /api/auth/signup` - User registration
+- `POST /api/auth/forgot-password` - Password recovery
 
 ### Services
 - `GET /api/services` - Get all services
 - `GET /api/services/:id` - Get service by ID
 
 ### Bookings
-- `GET /api/bookings` - Get all bookings (admin)
+- `GET /api/bookings` - Get all bookings (Admin only)
+- `GET /api/bookings/user/:email` - Get user's bookings
 - `GET /api/bookings/:id` - Get booking by ID
 - `POST /api/bookings` - Create new booking
-- `PATCH /api/bookings/:id` - Update booking
+- `PATCH /api/bookings/:id` - Update booking status
 - `DELETE /api/bookings/:id` - Delete booking
 
 ### Availability
 - `GET /api/availability/:date` - Get available time slots
 
-## ⚠️ Limitations (MVP)
+## 🎯 Academic Requirements Met
 
-This is a minimal viable product with the following limitations:
+✅ **User Authentication** - Complete signup, login, logout, password recovery  
+✅ **Role-Based Access Control** - Admin and User roles with protected routes  
+✅ **CRUD Operations** - Create, Read, Update, Delete bookings  
+✅ **Search & Filter** - Search by name/service, filter by status  
+✅ **Form Validation** - Client-side and server-side validation  
+✅ **Data Visualization** - Charts showing booking statistics  
+✅ **Data Export** - CSV export functionality  
+✅ **Responsive Design** - Mobile and desktop support  
+✅ **Modern UI** - Neutral, elegant salon aesthetic  
 
-- ✗ No payment integration
-- ✗ No email notifications
-- ✗ No database (in-memory storage only)
-- ✗ No advanced scheduling features
-- ✗ Data resets on server restart
+## 🚀 Features Breakdown
 
-## 🎯 Future Enhancements
+### CRUD Operations
+1. **Create** - Users can create new bookings
+2. **Read** - Users view their bookings, admins view all bookings
+3. **Update** - Admins can update booking status (confirm/reject)
+4. **Delete** - Users can cancel bookings, admins can delete any booking
 
-- Database integration (MongoDB/PostgreSQL)
-- Payment gateway integration
+### Role-Based Access
+- **Users** cannot access `/admin` route
+- **Admins** cannot access `/user-dashboard` route
+- Automatic redirection based on role
+- Protected booking route requires authentication
+
+### Booking Status Flow
+1. User creates booking → Status: **Pending**
+2. Admin reviews booking → Can **Confirm** or **Reject**
+3. Status updates reflect immediately on user dashboard
+4. Users can only cancel **Pending** bookings
+
+## 📱 Responsive Design
+- Mobile-first approach
+- Breakpoints for tablets and desktops
+- Touch-friendly interface
+- Optimized navigation for small screens
+
+## 🎨 Color Palette
+```css
+Primary Colors:
+- primary-50: #faf8f5 (Lightest beige)
+- primary-100: #f5f1ea
+- primary-200: #e8dfd0
+- primary-300: #d4c4ab
+- primary-400: #bda788
+- primary-500: #a68a64 (Base taupe)
+- primary-600: #8b7355
+- primary-700: #6d5a44
+- primary-800: #4a3d2e
+- primary-900: #2d251c (Darkest brown)
+```
+
+## 🔒 Security Features
+- Password minimum length enforcement
+- Email validation
+- Protected routes
+- Role-based authorization
+- Input sanitization
+- Server-side validation
+
+## 📝 Future Enhancements
 - Email notifications
 - SMS reminders
-- Advanced calendar view
+- Payment integration
+- Advanced scheduling (recurring appointments)
 - Customer reviews and ratings
-- Multi-location support
-- Staff management
+- Service provider selection
+- Real-time availability checking
+- Database integration (MongoDB/PostgreSQL)
 
-## 📝 Notes
+## 👨‍💻 Development
 
-- All data is stored in memory and will be lost when the server restarts
-- The authentication is mock-based for demonstration purposes
-- No actual security measures are implemented in this MVP
+### Project Structure
+```
+salon-booking/
+├── backend/
+│   ├── server.js          # Express server
+│   └── package.json       # Backend dependencies
+├── src/
+│   ├── components/
+│   │   └── ProtectedRoute.jsx
+│   ├── pages/
+│   │   ├── Home.jsx
+│   │   ├── Services.jsx
+│   │   ├── Booking.jsx
+│   │   ├── Login.jsx
+│   │   ├── Signup.jsx
+│   │   ├── ForgotPassword.jsx
+│   │   ├── AdminDashboard.jsx
+│   │   └── UserDashboard.jsx
+│   ├── App.jsx            # Main app component
+│   ├── index.css          # Global styles
+│   └── main.jsx           # Entry point
+├── package.json           # Frontend dependencies
+└── README.md             # This file
+```
 
-## 🤝 Contributing
-
-This is an MVP project. Feel free to fork and enhance!
+## 🐛 Known Limitations
+- Uses in-memory storage (data resets on server restart)
+- No email actually sent for password recovery
+- No real-time updates (requires page refresh)
+- Basic authentication (no JWT tokens)
 
 ## 📄 License
+This project is created for academic purposes.
 
-MIT License - Feel free to use this project for learning and development.
+## 🤝 Contributing
+This is an academic project. Contributions are welcome for educational purposes.
+
+---
+
+**Built with ❤️ for academic excellence**

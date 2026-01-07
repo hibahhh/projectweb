@@ -11,7 +11,7 @@ app.use(express.json());
 // Mock Data
 let users = [
     { id: 1, email: 'admin@salon.com', password: 'admin123', role: 'admin', name: 'Admin User' },
-    { id: 2, email: 'user@example.com', password: 'user123', role: 'customer', name: 'John Doe' }
+    { id: 2, email: 'user@example.com', password: 'user123', role: 'user', name: 'John Doe' }
 ];
 
 let services = [
@@ -104,6 +104,11 @@ app.get('/api/health', (req, res) => {
 app.post('/api/auth/login', (req, res) => {
     const { email, password } = req.body;
 
+    // Validation
+    if (!email || !password) {
+        return res.status(400).json({ success: false, message: 'Email and password are required' });
+    }
+
     const user = users.find(u => u.email === email && u.password === password);
 
     if (user) {
@@ -111,6 +116,59 @@ app.post('/api/auth/login', (req, res) => {
         res.json({ success: true, user: userWithoutPassword });
     } else {
         res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
+});
+
+// Signup
+app.post('/api/auth/signup', (req, res) => {
+    const { name, email, password } = req.body;
+
+    // Validation
+    if (!name || !email || !password) {
+        return res.status(400).json({ success: false, message: 'All fields are required' });
+    }
+
+    if (password.length < 6) {
+        return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+    }
+
+    // Check if user already exists
+    const existingUser = users.find(u => u.email === email);
+    if (existingUser) {
+        return res.status(409).json({ success: false, message: 'Email already registered' });
+    }
+
+    // Create new user
+    const newUser = {
+        id: users.length + 1,
+        name,
+        email,
+        password,
+        role: 'user'
+    };
+
+    users.push(newUser);
+
+    const { password: _, ...userWithoutPassword } = newUser;
+    res.status(201).json({ success: true, user: userWithoutPassword });
+});
+
+// Forgot Password
+app.post('/api/auth/forgot-password', (req, res) => {
+    const { email } = req.body;
+
+    if (!email) {
+        return res.status(400).json({ success: false, message: 'Email is required' });
+    }
+
+    const user = users.find(u => u.email === email);
+
+    if (user) {
+        // In a real app, send email here
+        res.json({ success: true, message: 'Password reset instructions sent to your email' });
+    } else {
+        // Don't reveal if email exists for security
+        res.json({ success: true, message: 'If that email exists, password reset instructions have been sent' });
     }
 });
 
@@ -134,6 +192,13 @@ app.get('/api/bookings', (req, res) => {
     res.json(bookings);
 });
 
+// Get bookings by user email
+app.get('/api/bookings/user/:email', (req, res) => {
+    const { email } = req.params;
+    const userBookings = bookings.filter(b => b.email === email);
+    res.json(userBookings);
+});
+
 // Get booking by ID
 app.get('/api/bookings/:id', (req, res) => {
     const booking = bookings.find(b => b.id === parseInt(req.params.id));
@@ -146,15 +211,59 @@ app.get('/api/bookings/:id', (req, res) => {
 
 // Create new booking
 app.post('/api/bookings', (req, res) => {
+    const { customerName, email, phone, service, date, time, notes } = req.body;
+
+    // Server-side validation
+    if (!customerName || !email || !phone || !service || !date || !time) {
+        return res.status(400).json({
+            success: false,
+            message: 'All required fields must be filled'
+        });
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Invalid email format'
+        });
+    }
+
+    // Phone validation (basic)
+    if (phone.length < 10) {
+        return res.status(400).json({
+            success: false,
+            message: 'Phone number must be at least 10 characters'
+        });
+    }
+
+    // Date validation (must be today or future)
+    const bookingDate = new Date(date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (bookingDate < today) {
+        return res.status(400).json({
+            success: false,
+            message: 'Booking date must be today or in the future'
+        });
+    }
+
     const newBooking = {
         id: bookings.length + 1,
-        ...req.body,
+        customerName,
+        email,
+        phone,
+        service,
+        date,
+        time,
+        notes: notes || '',
         status: 'pending',
         createdAt: new Date().toISOString()
     };
 
     bookings.push(newBooking);
-    res.status(201).json(newBooking);
+    res.status(201).json({ success: true, booking: newBooking });
 });
 
 // Update booking status

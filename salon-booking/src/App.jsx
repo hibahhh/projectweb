@@ -4,7 +4,11 @@ import Home from './pages/Home';
 import Services from './pages/Services';
 import Booking from './pages/Booking';
 import Login from './pages/Login';
+import Signup from './pages/Signup';
+import ForgotPassword from './pages/ForgotPassword';
 import AdminDashboard from './pages/AdminDashboard';
+import UserDashboard from './pages/UserDashboard';
+import ProtectedRoute from './components/ProtectedRoute';
 
 // Auth Context
 export const AuthContext = createContext();
@@ -13,62 +17,59 @@ export const useAuth = () => useContext(AuthContext);
 
 function App() {
   const [user, setUser] = useState(null);
-  const [bookings, setBookings] = useState([
-    {
-      id: 1,
-      customerName: 'Sarah Johnson',
-      service: 'Hair Styling',
-      date: '2026-01-10',
-      time: '10:00 AM',
-      status: 'confirmed'
-    },
-    {
-      id: 2,
-      customerName: 'Mike Chen',
-      service: 'Massage Therapy',
-      date: '2026-01-11',
-      time: '2:00 PM',
-      status: 'pending'
-    }
-  ]);
 
-  const login = (email, password) => {
-    // Mock authentication
-    if (email === 'admin@salon.com' && password === 'admin123') {
-      setUser({ email, role: 'admin', name: 'Admin User' });
-      return { success: true, role: 'admin' };
-    } else if (email && password) {
-      setUser({ email, role: 'customer', name: email.split('@')[0] });
-      return { success: true, role: 'customer' };
+  const login = async (email, password) => {
+    try {
+      const response = await fetch('http://localhost:3001/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.user) {
+        setUser(data.user);
+        return { success: true, role: data.user.role };
+      }
+      return { success: false, message: data.message };
+    } catch (error) {
+      return { success: false, message: 'Network error' };
     }
-    return { success: false };
   };
 
   const logout = () => {
     setUser(null);
   };
 
-  const addBooking = (booking) => {
-    const newBooking = {
-      ...booking,
-      id: bookings.length + 1,
-      status: 'pending'
-    };
-    setBookings([...bookings, newBooking]);
-    return newBooking;
-  };
-
   return (
-    <AuthContext.Provider value={{ user, login, logout, bookings, addBooking }}>
+    <AuthContext.Provider value={{ user, login, logout }}>
       <Router>
         <div className="min-h-screen">
           <Navbar />
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/services" element={<Services />} />
-            <Route path="/booking" element={<Booking />} />
+            <Route path="/booking" element={
+              <ProtectedRoute requireAuth={true}>
+                <Booking />
+              </ProtectedRoute>
+            } />
             <Route path="/login" element={<Login />} />
-            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/admin" element={
+              <ProtectedRoute requireAuth={true} requireRole="admin">
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/user-dashboard" element={
+              <ProtectedRoute requireAuth={true} requireRole="user">
+                <UserDashboard />
+              </ProtectedRoute>
+            } />
           </Routes>
         </div>
       </Router>
@@ -86,31 +87,33 @@ function Navbar() {
   };
 
   return (
-    <nav className="bg-white shadow-lg sticky top-0 z-50">
+    <nav className="bg-white shadow-sm sticky top-0 z-50 border-b border-[#E8DAD5]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary-600 to-pink-600 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-xl">✂</span>
-            </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-pink-600 bg-clip-text text-transparent">
-              Glamour Salon
+          <Link to="/" className="flex items-center">
+            <span className="text-3xl font-extrabold tracking-tight text-[#3A2F2F]">
+              BookMy<span className="text-[#C98C8C]">Salon</span>
             </span>
           </Link>
 
           <div className="hidden md:flex space-x-8">
-            <Link to="/" className="text-gray-700 hover:text-primary-600 font-medium transition-colors">
+            <Link to="/" className="text-[#7A6E6E] hover:text-[#C98C8C] font-medium transition-colors">
               Home
             </Link>
-            <Link to="/services" className="text-gray-700 hover:text-primary-600 font-medium transition-colors">
+            <Link to="/services" className="text-[#7A6E6E] hover:text-[#C98C8C] font-medium transition-colors">
               Services
             </Link>
-            <Link to="/booking" className="text-gray-700 hover:text-primary-600 font-medium transition-colors">
+            <Link to="/booking" className="text-[#7A6E6E] hover:text-[#C98C8C] font-medium transition-colors">
               Book Now
             </Link>
             {user?.role === 'admin' && (
-              <Link to="/admin" className="text-gray-700 hover:text-primary-600 font-medium transition-colors">
-                Dashboard
+              <Link to="/admin" className="text-[#7A6E6E] hover:text-[#C98C8C] font-medium transition-colors">
+                Admin Dashboard
+              </Link>
+            )}
+            {user?.role === 'user' && (
+              <Link to="/user-dashboard" className="text-[#7A6E6E] hover:text-[#C98C8C] font-medium transition-colors">
+                My Dashboard
               </Link>
             )}
           </div>
@@ -118,20 +121,25 @@ function Navbar() {
           <div className="flex items-center space-x-4">
             {user ? (
               <div className="flex items-center space-x-4">
-                <span className="text-gray-700 font-medium">
+                <span className="text-[#7A6E6E] font-medium">
                   Hello, {user.name}
                 </span>
                 <button
                   onClick={handleLogout}
-                  className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg font-medium transition-colors"
+                  className="bg-[#F1E6E2] hover:bg-[#E8DAD5] text-[#3A2F2F] px-4 py-2 rounded-lg font-medium transition-colors"
                 >
                   Logout
                 </button>
               </div>
             ) : (
-              <Link to="/login" className="btn-primary">
-                Login
-              </Link>
+              <div className="flex gap-2">
+                <Link to="/login" className="btn-secondary">
+                  Login
+                </Link>
+                <Link to="/signup" className="btn-primary">
+                  Sign Up
+                </Link>
+              </div>
             )}
           </div>
         </div>
@@ -141,3 +149,4 @@ function Navbar() {
 }
 
 export default App;
+
