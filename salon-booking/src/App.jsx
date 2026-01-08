@@ -8,6 +8,7 @@ import Signup from './pages/Signup';
 import ForgotPassword from './pages/ForgotPassword';
 import AdminDashboard from './pages/AdminDashboard';
 import UserDashboard from './pages/UserDashboard';
+import ManageServices from './pages/ManageServices';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Auth Context
@@ -65,6 +66,11 @@ function App() {
                 <AdminDashboard />
               </ProtectedRoute>
             } />
+            <Route path="/admin/services" element={
+              <ProtectedRoute requireAuth={true} requireRole="admin">
+                <ManageServices />
+              </ProtectedRoute>
+            } />
             <Route path="/user-dashboard" element={
               <ProtectedRoute requireAuth={true} requireRole="user">
                 <UserDashboard />
@@ -107,9 +113,14 @@ function Navbar() {
               Book Now
             </Link>
             {user?.role === 'admin' && (
-              <Link to="/admin" className="text-[#7A6E6E] hover:text-[#C98C8C] font-medium transition-colors">
-                Admin Dashboard
-              </Link>
+              <>
+                <Link to="/admin" className="text-[#7A6E6E] hover:text-[#C98C8C] font-medium transition-colors">
+                  Admin Dashboard
+                </Link>
+                <Link to="/admin/services" className="text-[#7A6E6E] hover:text-[#C98C8C] font-medium transition-colors">
+                  Manage Services
+                </Link>
+              </>
             )}
             {user?.role === 'user' && (
               <Link to="/user-dashboard" className="text-[#7A6E6E] hover:text-[#C98C8C] font-medium transition-colors">

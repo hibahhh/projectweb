@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
-import { SERVICES } from './Services';
 
 function Booking() {
     const { user } = useAuth();
     const navigate = useNavigate();
+    const [services, setServices] = useState([]);
 
     const [formData, setFormData] = useState({
         customerName: user?.name || '',
@@ -20,6 +20,20 @@ function Booking() {
     const [submitted, setSubmitted] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+
+    useEffect(() => {
+        fetchServices();
+    }, []);
+
+    const fetchServices = async () => {
+        try {
+            const response = await fetch('http://localhost:3001/api/services');
+            const data = await response.json();
+            setServices(data);
+        } catch (error) {
+            console.error('Error fetching services:', error);
+        }
+    };
 
     const timeSlots = [
         '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM',
@@ -53,7 +67,10 @@ function Booking() {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({
+                    ...formData,
+                    user_id: user?.id
+                }),
             });
 
             const data = await response.json();
@@ -170,7 +187,7 @@ function Booking() {
                                 className="input-field"
                             >
                                 <option value="">Choose a service...</option>
-                                {SERVICES.map(service => (
+                                {services.map(service => (
                                     <option key={service.id} value={service.name}>
                                         {service.name} - {service.price}
                                     </option>

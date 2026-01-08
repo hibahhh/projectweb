@@ -1,0 +1,65 @@
+╔════════════════════════════════════════════════════════════════╗
+║           SUPABASE DATABASE SETUP - QUICK START               ║
+╚════════════════════════════════════════════════════════════════╝
+
+📋 STEP-BY-STEP INSTRUCTIONS:
+
+1️⃣  Open Supabase Dashboard
+   → https://supabase.com/dashboard/project/jnoqdufzytezbbfyilyn
+
+2️⃣  Go to SQL Editor
+   → Click "SQL Editor" in left sidebar
+   → Click "+ New Query"
+
+3️⃣  Copy and Run SQL Script
+   → Open file: backend/supabase-setup.sql
+   → Copy ALL contents
+   → Paste into SQL Editor
+   → Click "RUN" button
+
+4️⃣  Verify Tables Created
+   → Click "Table Editor" in left sidebar
+   → Should see: users, login_logs, bookings
+
+5️⃣  Start Backend Server
+   → cd backend
+   → npm start
+
+6️⃣  Test Login
+   → Email: admin@salon.com
+   → Password: admin123
+
+✅ DONE! Your salon booking system now uses Supabase!
+
+═══════════════════════════════════════════════════════════════
+
+📊 WHAT WAS CHANGED:
+
+✓ Installed @supabase/supabase-js
+✓ Replaced all mock data with Supabase queries
+✓ Created 3 database tables:
+  • users (id, email, role, created_at)
+  • login_logs (id, user_id, login_time)
+  • bookings (id, user_id, service, date, time, status, created_at)
+
+✓ Implemented database operations:
+  • Signup → INSERT user
+  • Login → INSERT login_log
+  • Create booking → INSERT booking
+  • Confirm/Reject → UPDATE booking status
+  • Cancel → DELETE booking
+  • Admin stats → COUNT queries
+
+✗ NO FRONTEND CHANGES
+✗ NO UI CHANGES
+✗ API ENDPOINTS UNCHANGED
+
+═══════════════════════════════════════════════════════════════
+
+🎯 KEY FILES:
+
+• backend/server.js         → Updated with Supabase
+• backend/supabase-setup.sql → Run this in Supabase
+• SUPABASE_SETUP.md         → Full documentation
+
+═══════════════════════════════════════════════════════════════

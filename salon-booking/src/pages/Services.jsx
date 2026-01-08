@@ -1,88 +1,42 @@
-import { useState } from 'react';
-
-const SERVICES = [
-    {
-        id: 1,
-        name: 'Hair Styling',
-        description: 'Professional haircuts, styling, and treatments for all hair types',
-        price: '$50 - $150',
-        duration: '60-90 min',
-        icon: '💇‍♀️',
-        category: 'Hair'
-    },
-    {
-        id: 2,
-        name: 'Hair Coloring',
-        description: 'Full color, highlights, balayage, and color correction services',
-        price: '$80 - $250',
-        duration: '120-180 min',
-        icon: '🎨',
-        category: 'Hair'
-    },
-    {
-        id: 3,
-        name: 'Manicure & Pedicure',
-        description: 'Complete nail care with polish, gel, or acrylic options',
-        price: '$30 - $80',
-        duration: '45-60 min',
-        icon: '💅',
-        category: 'Nails'
-    },
-    {
-        id: 4,
-        name: 'Facial Treatment',
-        description: 'Deep cleansing, anti-aging, and hydrating facial treatments',
-        price: '$60 - $120',
-        duration: '60 min',
-        icon: '✨',
-        category: 'Skincare'
-    },
-    {
-        id: 5,
-        name: 'Massage Therapy',
-        description: 'Relaxing full-body massage to relieve stress and tension',
-        price: '$70 - $140',
-        duration: '60-90 min',
-        icon: '💆‍♀️',
-        category: 'Wellness'
-    },
-    {
-        id: 6,
-        name: 'Makeup Services',
-        description: 'Professional makeup for special occasions and events',
-        price: '$50 - $200',
-        duration: '45-90 min',
-        icon: '💄',
-        category: 'Makeup'
-    },
-    {
-        id: 7,
-        name: 'Waxing',
-        description: 'Professional hair removal services for smooth skin',
-        price: '$20 - $100',
-        duration: '15-60 min',
-        icon: '🌟',
-        category: 'Skincare'
-    },
-    {
-        id: 8,
-        name: 'Bridal Package',
-        description: 'Complete bridal beauty package including hair, makeup, and nails',
-        price: '$300 - $600',
-        duration: '3-4 hours',
-        icon: '👰',
-        category: 'Special'
-    }
-];
+import { useState, useEffect } from 'react';
 
 function Services() {
+    const [services, setServices] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [selectedCategory, setSelectedCategory] = useState('All');
 
-    const categories = ['All', ...new Set(SERVICES.map(s => s.category))];
+    useEffect(() => {
+        fetchServices();
+    }, []);
+
+    const fetchServices = async () => {
+        try {
+            const response = await fetch('http://localhost:3001/api/services');
+            const data = await response.json();
+            setServices(data);
+        } catch (error) {
+            console.error('Error fetching services:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const categories = ['All', ...new Set(services.map(s => s.category))];
 
     const filteredServices = selectedCategory === 'All'
-        ? SERVICES
-        : SERVICES.filter(s => s.category === selectedCategory);
+        ? services
+        : services.filter(s => s.category === selectedCategory);
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+                    <p className="mt-4 text-stone-600">Loading services...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen py-12 px-4">
@@ -107,8 +61,8 @@ function Services() {
                             key={category}
                             onClick={() => setSelectedCategory(category)}
                             className={`px-6 py-2 rounded-full font-semibold transition-all duration-200 ${selectedCategory === category
-                                    ? 'bg-gradient-to-r from-primary-600 to-pink-600 text-white shadow-lg scale-105'
-                                    : 'bg-white text-gray-700 hover:bg-gray-100 shadow-md'
+                                ? 'bg-gradient-to-r from-primary-600 to-pink-600 text-white shadow-lg scale-105'
+                                : 'bg-white text-gray-700 hover:bg-gray-100 shadow-md'
                                 }`}
                         >
                             {category}
@@ -122,6 +76,12 @@ function Services() {
                         <ServiceCard key={service.id} service={service} />
                     ))}
                 </div>
+
+                {filteredServices.length === 0 && (
+                    <div className="text-center py-12">
+                        <p className="text-gray-600 text-lg">No services available in this category</p>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -130,18 +90,13 @@ function Services() {
 function ServiceCard({ service }) {
     return (
         <div className="card group hover:scale-105 transition-all duration-300">
-            <div className="flex items-start space-x-4">
-                <div className="text-5xl group-hover:scale-110 transition-transform duration-300">
-                    {service.icon}
-                </div>
-                <div className="flex-1">
-                    <h3 className="text-2xl font-bold text-gray-800 mb-2">
-                        {service.name}
-                    </h3>
-                    <span className="inline-block px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-semibold mb-3">
-                        {service.category}
-                    </span>
-                </div>
+            <div className="mb-4">
+                <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                    {service.name}
+                </h3>
+                <span className="inline-block px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm font-semibold mb-3">
+                    {service.category}
+                </span>
             </div>
 
             <p className="text-gray-600 mb-4 leading-relaxed">
@@ -167,4 +122,3 @@ function ServiceCard({ service }) {
 }
 
 export default Services;
-export { SERVICES };

@@ -1,107 +1,29 @@
 import express from 'express';
 import cors from 'cors';
+import { createClient } from '@supabase/supabase-js';
 
 const app = express();
 const PORT = 3001;
+
+// Supabase Configuration
+const SUPABASE_URL = 'https://jnoqdufzytezbbfyilyn.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_MQylqUTv6BGn_tzGiV9_Yg_lb-KJ5qS';
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 
-// Mock Data
-let users = [
-    { id: 1, email: 'admin@salon.com', password: 'admin123', role: 'admin', name: 'Admin User' },
-    { id: 2, email: 'user@example.com', password: 'user123', role: 'user', name: 'John Doe' }
-];
-
-let services = [
-    {
-        id: 1,
-        name: 'Hair Styling',
-        description: 'Professional haircuts, styling, and treatments for all hair types',
-        price: '$50 - $150',
-        duration: '60-90 min',
-        category: 'Hair'
-    },
-    {
-        id: 2,
-        name: 'Hair Coloring',
-        description: 'Full color, highlights, balayage, and color correction services',
-        price: '$80 - $250',
-        duration: '120-180 min',
-        category: 'Hair'
-    },
-    {
-        id: 3,
-        name: 'Manicure & Pedicure',
-        description: 'Complete nail care with polish, gel, or acrylic options',
-        price: '$30 - $80',
-        duration: '45-60 min',
-        category: 'Nails'
-    },
-    {
-        id: 4,
-        name: 'Facial Treatment',
-        description: 'Deep cleansing, anti-aging, and hydrating facial treatments',
-        price: '$60 - $120',
-        duration: '60 min',
-        category: 'Skincare'
-    },
-    {
-        id: 5,
-        name: 'Massage Therapy',
-        description: 'Relaxing full-body massage to relieve stress and tension',
-        price: '$70 - $140',
-        duration: '60-90 min',
-        category: 'Wellness'
-    }
-];
-
-let bookings = [
-    {
-        id: 1,
-        customerName: 'Sarah Johnson',
-        email: 'sarah@example.com',
-        phone: '+1 (555) 123-4567',
-        service: 'Hair Styling',
-        date: '2026-01-10',
-        time: '10:00 AM',
-        status: 'confirmed',
-        notes: 'First time customer'
-    },
-    {
-        id: 2,
-        customerName: 'Mike Chen',
-        email: 'mike@example.com',
-        phone: '+1 (555) 987-6543',
-        service: 'Massage Therapy',
-        date: '2026-01-11',
-        time: '2:00 PM',
-        status: 'pending',
-        notes: ''
-    },
-    {
-        id: 3,
-        customerName: 'Emily Davis',
-        email: 'emily@example.com',
-        phone: '+1 (555) 456-7890',
-        service: 'Facial Treatment',
-        date: '2026-01-09',
-        time: '11:00 AM',
-        status: 'completed',
-        notes: 'Regular customer'
-    }
-];
-
 // Routes
 
 // Health check
 app.get('/api/health', (req, res) => {
-    res.json({ status: 'OK', message: 'Salon Booking API is running' });
+    res.json({ status: 'OK', message: 'Salon Booking API is running with Supabase' });
 });
 
-// Authentication
-app.post('/api/auth/login', (req, res) => {
+// Authentication - Login
+app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
 
     // Validation
@@ -109,18 +31,35 @@ app.post('/api/auth/login', (req, res) => {
         return res.status(400).json({ success: false, message: 'Email and password are required' });
     }
 
-    const user = users.find(u => u.email === email && u.password === password);
+    try {
+        // Check user credentials
+        const { data: users, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('email', email)
+            .eq('password', password)
+            .single();
 
-    if (user) {
-        const { password, ...userWithoutPassword } = user;
+        if (error || !users) {
+            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+
+        // Log the login
+        await supabase
+            .from('login_logs')
+            .insert([{ user_id: users.id, login_time: new Date().toISOString() }]);
+
+        // Return user without password
+        const { password: _, ...userWithoutPassword } = users;
         res.json({ success: true, user: userWithoutPassword });
-    } else {
-        res.status(401).json({ success: false, message: 'Invalid credentials' });
+    } catch (err) {
+        console.error('Login error:', err);
+        res.status(500).json({ success: false, message: 'Server error during login' });
     }
 });
 
 // Signup
-app.post('/api/auth/signup', (req, res) => {
+app.post('/api/auth/signup', async (req, res) => {
     const { name, email, password } = req.body;
 
     // Validation
@@ -132,86 +71,245 @@ app.post('/api/auth/signup', (req, res) => {
         return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
     }
 
-    // Check if user already exists
-    const existingUser = users.find(u => u.email === email);
-    if (existingUser) {
-        return res.status(409).json({ success: false, message: 'Email already registered' });
+    try {
+        // Check if user already exists
+        const { data: existingUser } = await supabase
+            .from('users')
+            .select('id')
+            .eq('email', email)
+            .single();
+
+        if (existingUser) {
+            return res.status(409).json({ success: false, message: 'Email already registered' });
+        }
+
+        // Create new user
+        const { data: newUser, error } = await supabase
+            .from('users')
+            .insert([
+                {
+                    name,
+                    email,
+                    password,
+                    role: 'user'
+                }
+            ])
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Signup error:', error);
+            return res.status(500).json({ success: false, message: 'Error creating user' });
+        }
+
+        const { password: _, ...userWithoutPassword } = newUser;
+        res.status(201).json({ success: true, user: userWithoutPassword });
+    } catch (err) {
+        console.error('Signup error:', err);
+        res.status(500).json({ success: false, message: 'Server error during signup' });
     }
-
-    // Create new user
-    const newUser = {
-        id: users.length + 1,
-        name,
-        email,
-        password,
-        role: 'user'
-    };
-
-    users.push(newUser);
-
-    const { password: _, ...userWithoutPassword } = newUser;
-    res.status(201).json({ success: true, user: userWithoutPassword });
 });
 
 // Forgot Password
-app.post('/api/auth/forgot-password', (req, res) => {
+app.post('/api/auth/forgot-password', async (req, res) => {
     const { email } = req.body;
 
     if (!email) {
         return res.status(400).json({ success: false, message: 'Email is required' });
     }
 
-    const user = users.find(u => u.email === email);
+    try {
+        const { data: user } = await supabase
+            .from('users')
+            .select('id')
+            .eq('email', email)
+            .single();
 
-    if (user) {
-        // In a real app, send email here
-        res.json({ success: true, message: 'Password reset instructions sent to your email' });
-    } else {
         // Don't reveal if email exists for security
+        res.json({ success: true, message: 'If that email exists, password reset instructions have been sent' });
+    } catch (err) {
         res.json({ success: true, message: 'If that email exists, password reset instructions have been sent' });
     }
 });
 
 // Get all services
-app.get('/api/services', (req, res) => {
-    res.json(services);
+app.get('/api/services', async (req, res) => {
+    try {
+        const { data: services, error } = await supabase
+            .from('services')
+            .select('*')
+            .order('id', { ascending: true });
+
+        if (error) {
+            console.error('Error fetching services:', error);
+            return res.status(500).json({ message: 'Error fetching services' });
+        }
+
+        res.json(services || []);
+    } catch (err) {
+        console.error('Error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
 });
 
 // Get service by ID
-app.get('/api/services/:id', (req, res) => {
-    const service = services.find(s => s.id === parseInt(req.params.id));
-    if (service) {
+app.get('/api/services/:id', async (req, res) => {
+    try {
+        const { data: service, error } = await supabase
+            .from('services')
+            .select('*')
+            .eq('id', req.params.id)
+            .single();
+
+        if (error || !service) {
+            return res.status(404).json({ message: 'Service not found' });
+        }
+
         res.json(service);
-    } else {
-        res.status(404).json({ message: 'Service not found' });
+    } catch (err) {
+        console.error('Error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Create new service (Admin only)
+app.post('/api/services', async (req, res) => {
+    const { name, description, price, duration, category } = req.body;
+
+    if (!name || !description || !price || !duration || !category) {
+        return res.status(400).json({
+            success: false,
+            message: 'All fields are required'
+        });
+    }
+
+    try {
+        const { data: newService, error } = await supabase
+            .from('services')
+            .insert([{ name, description, price, duration, category }])
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error creating service:', error);
+            return res.status(500).json({ success: false, message: 'Error creating service' });
+        }
+
+        res.status(201).json({ success: true, service: newService });
+    } catch (err) {
+        console.error('Error:', err);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// Update service (Admin only)
+app.patch('/api/services/:id', async (req, res) => {
+    try {
+        const { data: updatedService, error } = await supabase
+            .from('services')
+            .update(req.body)
+            .eq('id', req.params.id)
+            .select()
+            .single();
+
+        if (error || !updatedService) {
+            return res.status(404).json({ message: 'Service not found' });
+        }
+
+        res.json({ success: true, service: updatedService });
+    } catch (err) {
+        console.error('Error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Delete service (Admin only)
+app.delete('/api/services/:id', async (req, res) => {
+    try {
+        const { data: deletedService, error } = await supabase
+            .from('services')
+            .delete()
+            .eq('id', req.params.id)
+            .select()
+            .single();
+
+        if (error || !deletedService) {
+            return res.status(404).json({ message: 'Service not found' });
+        }
+
+        res.json({ message: 'Service deleted', service: deletedService });
+    } catch (err) {
+        console.error('Error:', err);
+        res.status(500).json({ message: 'Server error' });
     }
 });
 
 // Get all bookings (admin only)
-app.get('/api/bookings', (req, res) => {
-    res.json(bookings);
+app.get('/api/bookings', async (req, res) => {
+    try {
+        const { data: bookings, error } = await supabase
+            .from('bookings')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching bookings:', error);
+            return res.status(500).json({ message: 'Error fetching bookings' });
+        }
+
+        res.json(bookings || []);
+    } catch (err) {
+        console.error('Error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
 });
 
 // Get bookings by user email
-app.get('/api/bookings/user/:email', (req, res) => {
+app.get('/api/bookings/user/:email', async (req, res) => {
     const { email } = req.params;
-    const userBookings = bookings.filter(b => b.email === email);
-    res.json(userBookings);
+
+    try {
+        const { data: bookings, error } = await supabase
+            .from('bookings')
+            .select('*')
+            .eq('email', email)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching user bookings:', error);
+            return res.status(500).json({ message: 'Error fetching bookings' });
+        }
+
+        res.json(bookings || []);
+    } catch (err) {
+        console.error('Error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
 });
 
 // Get booking by ID
-app.get('/api/bookings/:id', (req, res) => {
-    const booking = bookings.find(b => b.id === parseInt(req.params.id));
-    if (booking) {
+app.get('/api/bookings/:id', async (req, res) => {
+    try {
+        const { data: booking, error } = await supabase
+            .from('bookings')
+            .select('*')
+            .eq('id', req.params.id)
+            .single();
+
+        if (error || !booking) {
+            return res.status(404).json({ message: 'Booking not found' });
+        }
+
         res.json(booking);
-    } else {
-        res.status(404).json({ message: 'Booking not found' });
+    } catch (err) {
+        console.error('Error:', err);
+        res.status(500).json({ message: 'Server error' });
     }
 });
 
 // Create new booking
-app.post('/api/bookings', (req, res) => {
-    const { customerName, email, phone, service, date, time, notes } = req.body;
+app.post('/api/bookings', async (req, res) => {
+    const { customerName, email, phone, service, date, time, notes, user_id } = req.body;
 
     // Server-side validation
     if (!customerName || !email || !phone || !service || !date || !time) {
@@ -249,53 +347,81 @@ app.post('/api/bookings', (req, res) => {
         });
     }
 
-    const newBooking = {
-        id: bookings.length + 1,
-        customerName,
-        email,
-        phone,
-        service,
-        date,
-        time,
-        notes: notes || '',
-        status: 'pending',
-        createdAt: new Date().toISOString()
-    };
+    try {
+        const { data: newBooking, error } = await supabase
+            .from('bookings')
+            .insert([
+                {
+                    user_id,
+                    customername: customerName,  // PostgreSQL uses lowercase column names
+                    email,
+                    phone,
+                    service,
+                    date,
+                    time,
+                    notes: notes || '',
+                    status: 'pending'
+                }
+            ])
+            .select()
+            .single();
 
-    bookings.push(newBooking);
-    res.status(201).json({ success: true, booking: newBooking });
-});
+        if (error) {
+            console.error('Error creating booking:', error);
+            return res.status(500).json({ success: false, message: 'Error creating booking' });
+        }
 
-// Update booking status
-app.patch('/api/bookings/:id', (req, res) => {
-    const bookingIndex = bookings.findIndex(b => b.id === parseInt(req.params.id));
-
-    if (bookingIndex !== -1) {
-        bookings[bookingIndex] = {
-            ...bookings[bookingIndex],
-            ...req.body,
-            updatedAt: new Date().toISOString()
-        };
-        res.json(bookings[bookingIndex]);
-    } else {
-        res.status(404).json({ message: 'Booking not found' });
+        res.status(201).json({ success: true, booking: newBooking });
+    } catch (err) {
+        console.error('Error:', err);
+        res.status(500).json({ success: false, message: 'Server error' });
     }
 });
 
-// Delete booking
-app.delete('/api/bookings/:id', (req, res) => {
-    const bookingIndex = bookings.findIndex(b => b.id === parseInt(req.params.id));
+// Update booking status (admin confirm/reject)
+app.patch('/api/bookings/:id', async (req, res) => {
+    try {
+        const { data: updatedBooking, error } = await supabase
+            .from('bookings')
+            .update(req.body)
+            .eq('id', req.params.id)
+            .select()
+            .single();
 
-    if (bookingIndex !== -1) {
-        const deletedBooking = bookings.splice(bookingIndex, 1);
-        res.json({ message: 'Booking deleted', booking: deletedBooking[0] });
-    } else {
-        res.status(404).json({ message: 'Booking not found' });
+        if (error || !updatedBooking) {
+            return res.status(404).json({ message: 'Booking not found' });
+        }
+
+        res.json(updatedBooking);
+    } catch (err) {
+        console.error('Error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Delete booking (user cancel)
+app.delete('/api/bookings/:id', async (req, res) => {
+    try {
+        const { data: deletedBooking, error } = await supabase
+            .from('bookings')
+            .delete()
+            .eq('id', req.params.id)
+            .select()
+            .single();
+
+        if (error || !deletedBooking) {
+            return res.status(404).json({ message: 'Booking not found' });
+        }
+
+        res.json({ message: 'Booking deleted', booking: deletedBooking });
+    } catch (err) {
+        console.error('Error:', err);
+        res.status(500).json({ message: 'Server error' });
     }
 });
 
 // Get available time slots for a date
-app.get('/api/availability/:date', (req, res) => {
+app.get('/api/availability/:date', async (req, res) => {
     const { date } = req.params;
     const allSlots = [
         '9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM',
@@ -303,17 +429,71 @@ app.get('/api/availability/:date', (req, res) => {
         '5:00 PM', '6:00 PM', '7:00 PM'
     ];
 
-    const bookedSlots = bookings
-        .filter(b => b.date === date)
-        .map(b => b.time);
+    try {
+        const { data: bookings, error } = await supabase
+            .from('bookings')
+            .select('time')
+            .eq('date', date);
 
-    const availableSlots = allSlots.filter(slot => !bookedSlots.includes(slot));
+        if (error) {
+            console.error('Error fetching availability:', error);
+            return res.status(500).json({ message: 'Error fetching availability' });
+        }
 
-    res.json({ date, availableSlots, bookedSlots });
+        const bookedSlots = bookings.map(b => b.time);
+        const availableSlots = allSlots.filter(slot => !bookedSlots.includes(slot));
+
+        res.json({ date, availableSlots, bookedSlots });
+    } catch (err) {
+        console.error('Error:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// Admin Dashboard Statistics
+app.get('/api/admin/stats', async (req, res) => {
+    try {
+        // Get total users count
+        const { count: totalUsers, error: usersError } = await supabase
+            .from('users')
+            .select('*', { count: 'exact', head: true });
+
+        // Get total login count
+        const { count: totalLogins, error: loginsError } = await supabase
+            .from('login_logs')
+            .select('*', { count: 'exact', head: true });
+
+        // Get total bookings count
+        const { count: totalBookings, error: bookingsError } = await supabase
+            .from('bookings')
+            .select('*', { count: 'exact', head: true });
+
+        // Get bookings by status
+        const { data: allBookings, error: statusError } = await supabase
+            .from('bookings')
+            .select('status');
+
+        const pendingCount = allBookings?.filter(b => b.status === 'pending').length || 0;
+        const confirmedCount = allBookings?.filter(b => b.status === 'confirmed').length || 0;
+        const completedCount = allBookings?.filter(b => b.status === 'completed').length || 0;
+
+        res.json({
+            totalUsers: totalUsers || 0,
+            totalLogins: totalLogins || 0,
+            totalBookings: totalBookings || 0,
+            pendingBookings: pendingCount,
+            confirmedBookings: confirmedCount,
+            completedBookings: completedCount
+        });
+    } catch (err) {
+        console.error('Error fetching stats:', err);
+        res.status(500).json({ message: 'Server error' });
+    }
 });
 
 // Start server
 app.listen(PORT, () => {
     console.log(`🚀 Salon Booking API running on http://localhost:${PORT}`);
     console.log(`📊 API Health: http://localhost:${PORT}/api/health`);
+    console.log(`🗄️  Connected to Supabase`);
 });

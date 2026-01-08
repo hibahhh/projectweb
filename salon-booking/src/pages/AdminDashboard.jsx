@@ -11,6 +11,14 @@ function AdminDashboard() {
     const { user } = useAuth();
     const navigate = useNavigate();
     const [bookings, setBookings] = useState([]);
+    const [stats, setStats] = useState({
+        totalUsers: 0,
+        totalLogins: 0,
+        totalBookings: 0,
+        pendingBookings: 0,
+        confirmedBookings: 0,
+        completedBookings: 0
+    });
     const [filter, setFilter] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [isLoading, setIsLoading] = useState(true);
@@ -27,7 +35,18 @@ function AdminDashboard() {
         }
 
         fetchAllBookings();
+        fetchAdminStats();
     }, [user, navigate]);
+
+    const fetchAdminStats = async () => {
+        try {
+            const response = await fetch('http://localhost:3001/api/admin/stats');
+            const data = await response.json();
+            setStats(data);
+        } catch (error) {
+            console.error('Error fetching admin stats:', error);
+        }
+    };
 
     const fetchAllBookings = async () => {
         try {
@@ -119,18 +138,11 @@ function AdminDashboard() {
         return matchesFilter && matchesSearch;
     });
 
-    const stats = {
-        total: bookings.length,
-        pending: bookings.filter(b => b.status === 'pending').length,
-        confirmed: bookings.filter(b => b.status === 'confirmed').length,
-        rejected: bookings.filter(b => b.status === 'rejected').length
-    };
-
-    // Chart data
+    // Chart data using API stats
     const pieChartData = {
         labels: ['Pending', 'Confirmed', 'Rejected'],
         datasets: [{
-            data: [stats.pending, stats.confirmed, stats.rejected],
+            data: [stats.pendingBookings, stats.confirmedBookings, stats.completedBookings],
             backgroundColor: ['#fbbf24', '#10b981', '#ef4444'],
             borderColor: ['#f59e0b', '#059669', '#dc2626'],
             borderWidth: 2
@@ -141,7 +153,7 @@ function AdminDashboard() {
         labels: ['Pending', 'Confirmed', 'Rejected'],
         datasets: [{
             label: 'Number of Bookings',
-            data: [stats.pending, stats.confirmed, stats.rejected],
+            data: [stats.pendingBookings, stats.confirmedBookings, stats.completedBookings],
             backgroundColor: ['#fbbf24', '#10b981', '#ef4444'],
         }]
     };
@@ -168,10 +180,32 @@ function AdminDashboard() {
 
                 {/* Stats Cards */}
                 <div className="grid md:grid-cols-4 gap-6 mb-8">
-                    <StatCard title="Total Bookings" value={stats.total} icon="📊" color="primary" />
-                    <StatCard title="Pending" value={stats.pending} icon="⏳" color="yellow" />
-                    <StatCard title="Confirmed" value={stats.confirmed} icon="✅" color="green" />
-                    <StatCard title="Rejected" value={stats.rejected} icon="❌" color="red" />
+                    <StatCard title="Total Bookings" value={stats.totalBookings} icon="📊" color="primary" />
+                    <StatCard title="Pending" value={stats.pendingBookings} icon="⏳" color="yellow" />
+                    <StatCard title="Confirmed" value={stats.confirmedBookings} icon="✅" color="green" />
+                    <StatCard title="Completed" value={stats.completedBookings} icon="✨" color="green" />
+                </div>
+
+                {/* Additional Stats Row */}
+                <div className="grid md:grid-cols-2 gap-6 mb-8">
+                    <div className="card bg-gradient-to-br from-blue-600 to-blue-700 text-white">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm opacity-90 mb-1">Total Users</p>
+                                <p className="text-4xl font-bold">{stats.totalUsers}</p>
+                            </div>
+                            <div className="text-5xl opacity-80">👥</div>
+                        </div>
+                    </div>
+                    <div className="card bg-gradient-to-br from-purple-600 to-purple-700 text-white">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm opacity-90 mb-1">Total Logins</p>
+                                <p className="text-4xl font-bold">{stats.totalLogins}</p>
+                            </div>
+                            <div className="text-5xl opacity-80">🔐</div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Charts Section */}
